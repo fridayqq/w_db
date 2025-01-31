@@ -86,11 +86,11 @@ st.title("Кошельки из базы данных PostgreSQL")
 
 # Поля для ввода имени пользователя и пароля
 username = st.text_input("Имя пользователя")
-pwd = st.text_input("Пароль", type="password")
+password = st.text_input("Пароль", type="password")
 
 # Кнопка авторизации
 if st.button("Авторизоваться"):
-    if username == app_login and pwd == app_password:
+    if username == app_login and password == app_password:
         st.session_state.authenticated = True
         st.success("Вы успешно авторизовались!")
     else:
@@ -117,8 +117,14 @@ if "authenticated" in st.session_state and st.session_state.authenticated:
         if st.session_state.wallets_df is not None:
             st.dataframe(st.session_state.wallets_df)
 
+        st.markdown("""
+        <style>
+        .streamlit-button-primary { background-color: #4CAF50; color: white; font-weight: bold; border-radius: 5px; }
+        </style>
+        """, unsafe_allow_html=True)
+
         st.subheader("Обновление вебхука")
-        if st.button("Обновить вебхук", key="update_webhook", use_container_width=True):
+        if st.button("Обновить вебхук", key="update_webhook"):
             update_webhook()
 else:
     st.warning("Авторизуйтесь, чтобы получить доступ к функционалу.")
