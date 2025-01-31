@@ -2,6 +2,8 @@ import streamlit as st
 import psycopg2
 import pandas as pd
 import os
+import requests
+import json
 
 # Получение данных для подключения к базе данных из переменных окружения
 host = os.getenv("DB_HOST")
@@ -11,6 +13,9 @@ user = os.getenv("DB_USER")
 password = os.getenv("DB_PASSWORD")
 app_login = os.getenv("USER_LOGIN")
 app_password = os.getenv("USER_PASSWORD")
+api_token = os.getenv("API_KEY")
+webhook_id = os.getenv("WEBHOOK_ID")
+webhook_url = os.getenv("WEBHOOK_URL")
 
 # Функция для подключения к базе данных
 def create_connection(host, port, dbname, user, password):
@@ -33,90 +38,59 @@ def check_connection():
         return False
     return True
 
-# Функция для получения данных из базы данных
-def get_wallets():
+# Функция для получения списка кошельков из базы данных
+def get_wallet_addresses_with_names():
     try:
         if not check_connection():
             st.error("Соединение с базой данных не установлено. Подключитесь заново.")
-            return None
-        query = "SELECT * FROM project1.wallets;"
-        df = pd.read_sql(query, st.session_state.conn)
-        return df
-    except Exception as e:
-        st.error(f"Ошибка при получении данных: {e}")
-        return None
-
-# Функция для поиска записей
-def search_wallets(search_field, search_value):
-    try:
-        if not check_connection():
-            st.error("Соединение с базой данных не установлено. Подключитесь заново.")
-            return None
-        query = f"SELECT * FROM project1.wallets WHERE {search_field}::text ILIKE %s;"
-        df = pd.read_sql(query, st.session_state.conn, params=[f"%{search_value}%"])
-        return df
-    except Exception as e:
-        st.error(f"Ошибка при поиске данных: {e}")
-        return None
-
-# Функция для обновления записей
-def update_wallet(wallet_id, field, new_value):
-    try:
-        if not check_connection():
-            st.error("Соединение с базой данных не установлено. Подключитесь заново.")
-            return
+            return []
         cursor = st.session_state.conn.cursor()
-        query = f"UPDATE project1.wallets SET {field} = %s WHERE id = %s"
-        cursor.execute(query, (new_value, wallet_id))
-        if cursor.rowcount == 0:
-            st.error("Нет такой записи для обновления!")
+        cursor.execute("SELECT address, name FROM project1.wallets")
+        wallets = cursor.fetchall()
+        return wallets
+    except Exception as e:
+        st.error(f"Ошибка при получении кошельков: {e}")
+        return []
+
+# Функция для обновления вебхука
+def update_webhook():
+    wallets = [wallet[0] for wallet in get_wallet_addresses_with_names()]
+    if len(wallets) == 0:
+        st.error("В базе данных нет кошельков. Добавьте адреса в таблицу project1.wallets.")
+        return
+
+    payload = {
+        "webhookURL": webhook_url,
+        "transactionTypes": ["Any"],
+        "accountAddresses": wallets,
+        "webhookType": "enhanced",
+        "txnStatus": "all"
+    }
+
+    try:
+        response = requests.put(
+            f"https://api.helius.xyz/v0/webhooks/{webhook_id}?api-key={api_token}",
+            headers={"Content-Type": "application/json"},
+            data=json.dumps(payload)
+        )
+
+        if response.status_code == 200:
+            st.success("Webhook успешно обновлен")
         else:
-            st.session_state.conn.commit()
-            st.success("Запись обновлена!")
+            st.error(f"Ошибка при обновлении вебхука: {response.status_code}")
     except Exception as e:
-        st.error(f"Ошибка при обновлении записи: {e}")
-
-# Функция для удаления записи
-def delete_wallet(delete_field, delete_value):
-    try:
-        if not check_connection():
-            st.error("Соединение с базой данных не установлено. Подключитесь заново.")
-            return
-        cursor = st.session_state.conn.cursor()
-        query = f"DELETE FROM project1.wallets WHERE {delete_field} = %s"
-        cursor.execute(query, (delete_value,))
-        if cursor.rowcount == 0:
-            st.error("Нет такой записи для удаления!")
-        else:
-            st.session_state.conn.commit()
-            st.success("Запись удалена!")
-    except Exception as e:
-        st.error(f"Ошибка при удалении записи: {e}")
-
-# Функция для добавления новой записи
-def add_wallet(address, name):
-    try:
-        if not check_connection():
-            st.error("Соединение с базой данных не установлено. Подключитесь заново.")
-            return
-        cursor = st.session_state.conn.cursor()
-        cursor.execute("INSERT INTO project1.wallets (address, name) VALUES (%s, %s) RETURNING id", (address, name))
-        new_id = cursor.fetchone()[0]
-        st.session_state.conn.commit()
-        st.success(f"Новая запись добавлена с ID: {new_id}")
-    except Exception as e:
-        st.error(f"Ошибка при добавлении записи: {e}")
+        st.error(f"Произошла ошибка: {str(e)}")
 
 # Streamlit UI
 st.title("Кошельки из базы данных PostgreSQL")
 
 # Поля для ввода имени пользователя и пароля
 username = st.text_input("Имя пользователя")
-pw = st.text_input("Пароль", type="password")
+password = st.text_input("Пароль", type="password")
 
 # Кнопка авторизации
 if st.button("Авторизоваться"):
-    if username == app_login and pw == app_password:
+    if username == "admin" and password == "admin_pass":
         st.session_state.authenticated = True
         st.success("Вы успешно авторизовались!")
     else:
@@ -136,36 +110,15 @@ if "authenticated" in st.session_state and st.session_state.authenticated:
             st.session_state.wallets_df = None
 
         if st.button("Получить данные из БД"):
-            st.session_state.wallets_df = get_wallets()
+            wallets = get_wallet_addresses_with_names()
+            if wallets:
+                st.session_state.wallets_df = pd.DataFrame(wallets, columns=["address", "name"])
 
         if st.session_state.wallets_df is not None:
             st.dataframe(st.session_state.wallets_df)
 
-        st.subheader("Поиск записей")
-        search_field = st.selectbox("Поле для поиска", ["id", "address", "name"])
-        search_value = st.text_input("Значение для поиска")
-        if st.button("Найти записи"):
-            search_results = search_wallets(search_field, search_value)
-            if search_results is not None:
-                st.dataframe(search_results)
-
-        st.subheader("Редактирование записи")
-        wallet_id = st.number_input("ID записи", min_value=1, step=1)
-        field_to_update = st.selectbox("Поле для обновления", ["address", "name"])
-        new_value = st.text_input("Новое значение")
-        if st.button("Обновить запись"):
-            update_wallet(wallet_id, field_to_update, new_value)
-
-        st.subheader("Удаление записи")
-        delete_field = st.selectbox("Поле для удаления", ["id", "address", "name"])
-        delete_value = st.text_input("Значение для удаления")
-        if st.button("Удалить запись"):
-            delete_wallet(delete_field, delete_value)
-
-        st.subheader("Добавление новой записи")
-        new_address = st.text_input("Адрес кошелька")
-        new_name = st.text_input("Имя кошелька")
-        if st.button("Добавить запись"):
-            add_wallet(new_address, new_name)
+        st.subheader("Обновление вебхука")
+        if st.button("Обновить вебхук", key="update_webhook", use_container_width=True):
+            update_webhook()
 else:
     st.warning("Авторизуйтесь, чтобы получить доступ к функционалу.")
