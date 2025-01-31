@@ -9,6 +9,8 @@ port = os.getenv("DB_PORT", "5432")
 dbname = os.getenv("DB_NAME")
 user = os.getenv("DB_USER")
 password = os.getenv("DB_PASSWORD")
+app_login = os.getenv("USER_LOGIN")
+app_password = os.getenv("USER_PASSWORD")
 
 # Функция для подключения к базе данных
 def create_connection(host, port, dbname, user, password):
@@ -114,7 +116,7 @@ pw = st.text_input("Пароль", type="password")
 
 # Кнопка авторизации
 if st.button("Авторизоваться"):
-    if username == "admin" and pw == "admin_pass":
+    if username == app_login and pw == app_password:
         st.session_state.authenticated = True
         st.success("Вы успешно авторизовались!")
     else:
