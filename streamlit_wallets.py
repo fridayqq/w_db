@@ -52,9 +52,24 @@ def get_wallet_addresses_with_names():
         st.error(f"Ошибка при получении кошельков: {e}")
         return []
 
+# Функция для поиска записей
+def search_wallets(search_field, search_value):
+    try:
+        if not check_connection():
+            st.error("Соединение с базой данных не установлено. Подключитесь заново.")
+            return []
+        cursor = st.session_state.conn.cursor()
+        query = f"SELECT id, address, name FROM project1.wallets WHERE {search_field}::text ILIKE %s"
+        cursor.execute(query, (f"%{search_value}%",))
+        results = cursor.fetchall()
+        return results
+    except Exception as e:
+        st.error(f"Ошибка при поиске записей: {e}")
+        return []
+
 # Функция для обновления вебхука
 def update_webhook():
-    wallets = [wallet[0] for wallet in get_wallet_addresses_with_names()]
+    wallets = [wallet[1] for wallet in get_wallet_addresses_with_names()]
     if len(wallets) == 0:
         st.error("В базе данных нет кошельков. Добавьте адреса в таблицу project1.wallets.")
         return
@@ -158,10 +173,21 @@ if "authenticated" in st.session_state and st.session_state.authenticated:
         if st.button("Получить данные из БД"):
             wallets = get_wallet_addresses_with_names()
             if wallets:
-                st.session_state.wallets_df = pd.DataFrame(wallets)
+                st.session_state.wallets_df = pd.DataFrame(wallets, columns=["ID", "Адрес", "Имя"])
 
         if st.session_state.wallets_df is not None:
             st.dataframe(st.session_state.wallets_df)
+
+        st.subheader("Поиск записей")
+        search_field = st.selectbox("Поле для поиска", ["id", "address", "name"])
+        search_value = st.text_input("Значение для поиска")
+        if st.button("Найти записи"):
+            search_results = search_wallets(search_field, search_value)
+            if search_results:
+                search_df = pd.DataFrame(search_results, columns=["ID", "Адрес", "Имя"])
+                st.dataframe(search_df)
+            else:
+                st.info("Записей не найдено.")
 
         st.subheader("Добавление новой записи")
         new_address = st.text_input("Адрес нового кошелька")
