@@ -90,7 +90,7 @@ pwd = st.text_input("Пароль", type="password")
 
 # Кнопка авторизации
 if st.button("Авторизоваться"):
-    if username == app_login and password == app_password:
+    if username == app_login and pwd == app_password:
         st.session_state.authenticated = True
         st.success("Вы успешно авторизовались!")
     else:
