@@ -158,7 +158,7 @@ if "authenticated" in st.session_state and st.session_state.authenticated:
         if st.button("Получить данные из БД"):
             wallets = get_wallet_addresses_with_names()
             if wallets:
-                st.session_state.wallets_df = pd.DataFrame(wallets, columns=["id", "address", "name"])
+                st.session_state.wallets_df = pd.DataFrame(wallets)
 
         if st.session_state.wallets_df is not None:
             st.dataframe(st.session_state.wallets_df)
