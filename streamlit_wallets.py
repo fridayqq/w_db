@@ -8,6 +8,10 @@ DB_PORT = os.getenv("DB_PORT")
 DB_NAME = os.getenv("DB_NAME")
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
+ADMIN_LOGIN = os.getenv("ADMIN_LOGIN")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
+USER_LOGIN = os.getenv("USER_LOGIN")
+USER_PASSWORD = os.getenv("USER_PASSWORD")
 
 # Функция для получения данных из базы данных
 def get_wallets():
@@ -108,41 +112,64 @@ def add_wallet(address, name):
     except Exception as e:
         st.error(f"Ошибка при добавлении записи: {e}")
 
+# Функция для проверки логина
+def authenticate_user(username, password):
+    # Пример хардкоданных пользователей. В реальном приложении заменить на базу данных.
+    users = {
+        ADMIN_LOGIN: ADMIN_PASSWORD,
+        USER_LOGIN: USER_PASSWORD,
+    }
+    return users.get(username) == password
+
 # Streamlit UI
-st.title("Кошельки из базы данных PostgreSQL")
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
 
-if "wallets_df" not in st.session_state:
-    st.session_state.wallets_df = None
+if not st.session_state.authenticated:
+    st.title("Авторизация")
+    username = st.text_input("Имя пользователя")
+    password = st.text_input("Пароль", type="password")
+    if st.button("Войти"):
+        if authenticate_user(username, password):
+            st.session_state.authenticated = True
+            st.success("Успешный вход в систему!")
+        else:
+            st.error("Неверное имя пользователя или пароль")
+else:
+    st.title("Кошельки из базы данных PostgreSQL")
 
-if st.button("Получить данные из БД"):
-    st.session_state.wallets_df = get_wallets()
+    if "wallets_df" not in st.session_state:
+        st.session_state.wallets_df = None
 
-if st.session_state.wallets_df is not None:
-    st.dataframe(st.session_state.wallets_df)
+    if st.button("Получить данные из БД"):
+        st.session_state.wallets_df = get_wallets()
 
-st.subheader("Поиск записей")
-search_field = st.selectbox("Поле для поиска", ["id", "address", "name"])
-search_value = st.text_input("Значение для поиска")
-if st.button("Найти записи"):
-    search_results = search_wallets(search_field, search_value)
-    if search_results is not None:
-        st.dataframe(search_results)
+    if st.session_state.wallets_df is not None:
+        st.dataframe(st.session_state.wallets_df)
 
-st.subheader("Редактирование записи")
-wallet_id = st.number_input("ID записи", min_value=1, step=1)
-field_to_update = st.selectbox("Поле для обновления", ["address", "name"])
-new_value = st.text_input("Новое значение")
-if st.button("Обновить запись"):
-    update_wallet(wallet_id, field_to_update, new_value)
+    st.subheader("Поиск записей")
+    search_field = st.selectbox("Поле для поиска", ["id", "address", "name"])
+    search_value = st.text_input("Значение для поиска")
+    if st.button("Найти записи"):
+        search_results = search_wallets(search_field, search_value)
+        if search_results is not None:
+            st.dataframe(search_results)
 
-st.subheader("Удаление записи")
-delete_field = st.selectbox("Поле для удаления", ["id", "address", "name"])
-delete_value = st.text_input("Значение для удаления")
-if st.button("Удалить запись"):
-    delete_wallet(delete_field, delete_value)
+    st.subheader("Редактирование записи")
+    wallet_id = st.number_input("ID записи", min_value=1, step=1)
+    field_to_update = st.selectbox("Поле для обновления", ["address", "name"])
+    new_value = st.text_input("Новое значение")
+    if st.button("Обновить запись"):
+        update_wallet(wallet_id, field_to_update, new_value)
 
-st.subheader("Добавление новой записи")
-new_address = st.text_input("Адрес кошелька")
-new_name = st.text_input("Имя кошелька")
-if st.button("Добавить запись"):
-    add_wallet(new_address, new_name)
+    st.subheader("Удаление записи")
+    delete_field = st.selectbox("Поле для удаления", ["id", "address", "name"])
+    delete_value = st.text_input("Значение для удаления")
+    if st.button("Удалить запись"):
+        delete_wallet(delete_field, delete_value)
+
+    st.subheader("Добавление новой записи")
+    new_address = st.text_input("Адрес кошелька")
+    new_name = st.text_input("Имя кошелька")
+    if st.button("Добавить запись"):
+        add_wallet(new_address, new_name)
