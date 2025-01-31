@@ -13,6 +13,7 @@ ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
 USER_LOGIN = os.getenv("USER_LOGIN")
 USER_PASSWORD = os.getenv("USER_PASSWORD")
 
+
 # Функция для получения данных из базы данных
 def get_wallets():
     try:
@@ -114,7 +115,6 @@ def add_wallet(address, name):
 
 # Функция для проверки логина
 def authenticate_user(username, password):
-    # Пример хардкоданных пользователей. В реальном приложении заменить на базу данных.
     users = {
         ADMIN_LOGIN: ADMIN_PASSWORD,
         USER_LOGIN: USER_PASSWORD,
