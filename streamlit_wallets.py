@@ -131,9 +131,11 @@ if not st.session_state.authenticated:
     if st.button("Войти"):
         if authenticate_user(username, password):
             st.session_state.authenticated = True
-            st.experimental_rerun()  # Обновить интерфейс после входа
+            st.success("Успешный вход в систему!")
         else:
             st.error("Неверное имя пользователя или пароль")
+    st.stop()  # Остановить дальнейшую отрисовку интерфейса, пока не выполнен вход
+
 else:
     st.title("Кошельки из базы данных PostgreSQL")
 
