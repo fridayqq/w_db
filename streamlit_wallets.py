@@ -11,8 +11,8 @@ port = os.getenv("DB_PORT", "5432")
 dbname = os.getenv("DB_NAME")
 user = os.getenv("DB_USER")
 password = os.getenv("DB_PASSWORD")
-app_login = os.getenv("USER_LOGIN")
-app_password = os.getenv("USER_PASSWORD")
+app_login = os.getenv("APP_LOGIN")  # Логин для приложения
+app_password = os.getenv("APP_PASSWORD")  # Пароль для приложения
 api_token = os.getenv("API_KEY")
 webhook_id = os.getenv("WEBHOOK_ID")
 webhook_url = os.getenv("WEBHOOK_URL")
@@ -81,16 +81,62 @@ def update_webhook():
     except Exception as e:
         st.error(f"Произошла ошибка: {str(e)}")
 
+# Функция для добавления новой записи
+def add_wallet(address, name):
+    try:
+        if not check_connection():
+            st.error("Соединение с базой данных не установлено. Подключитесь заново.")
+            return
+        cursor = st.session_state.conn.cursor()
+        cursor.execute("INSERT INTO project1.wallets (address, name) VALUES (%s, %s) RETURNING id", (address, name))
+        new_id = cursor.fetchone()[0]
+        st.session_state.conn.commit()
+        st.success(f"Новая запись добавлена с ID: {new_id}")
+    except Exception as e:
+        st.error(f"Ошибка при добавлении записи: {e}")
+
+# Функция для редактирования записи
+def update_wallet(wallet_id, field, new_value):
+    try:
+        if not check_connection():
+            st.error("Соединение с базой данных не установлено. Подключитесь заново.")
+            return
+        cursor = st.session_state.conn.cursor()
+        cursor.execute(f"UPDATE project1.wallets SET {field} = %s WHERE id = %s", (new_value, wallet_id))
+        if cursor.rowcount == 0:
+            st.error("Нет такой записи для обновления!")
+        else:
+            st.session_state.conn.commit()
+            st.success("Запись успешно обновлена!")
+    except Exception as e:
+        st.error(f"Ошибка при обновлении записи: {e}")
+
+# Функция для удаления записи
+def delete_wallet(wallet_id):
+    try:
+        if not check_connection():
+            st.error("Соединение с базой данных не установлено. Подключитесь заново.")
+            return
+        cursor = st.session_state.conn.cursor()
+        cursor.execute("DELETE FROM project1.wallets WHERE id = %s", (wallet_id,))
+        if cursor.rowcount == 0:
+            st.error("Нет такой записи для удаления!")
+        else:
+            st.session_state.conn.commit()
+            st.success("Запись успешно удалена!")
+    except Exception as e:
+        st.error(f"Ошибка при удалении записи: {e}")
+
 # Streamlit UI
 st.title("Кошельки из базы данных PostgreSQL")
 
 # Поля для ввода имени пользователя и пароля
 username = st.text_input("Имя пользователя")
-password = st.text_input("Пароль", type="password")
+app_password_input = st.text_input("Пароль", type="password")
 
 # Кнопка авторизации
 if st.button("Авторизоваться"):
-    if username == app_login and password == app_password:
+    if username == app_login and app_password_input == app_password:
         st.session_state.authenticated = True
         st.success("Вы успешно авторизовались!")
     else:
@@ -101,7 +147,7 @@ if st.button("Авторизоваться"):
 if "authenticated" in st.session_state and st.session_state.authenticated:
     if "conn" not in st.session_state or st.session_state.conn.closed != 0:
         if st.button("Подключиться к базе данных"):
-            st.session_state.conn = create_connection(host, port, dbname, user, password)
+            st.session_state.conn = create_connection(host, port, dbname, user, password)  # Using DB credentials
             if st.session_state.conn:
                 st.success("Подключение успешно установлено!")
 
@@ -116,6 +162,24 @@ if "authenticated" in st.session_state and st.session_state.authenticated:
 
         if st.session_state.wallets_df is not None:
             st.dataframe(st.session_state.wallets_df)
+
+        st.subheader("Добавление новой записи")
+        new_address = st.text_input("Адрес нового кошелька")
+        new_name = st.text_input("Имя нового кошелька")
+        if st.button("Добавить запись"):
+            add_wallet(new_address, new_name)
+
+        st.subheader("Редактирование записи")
+        wallet_id_to_update = st.number_input("ID записи для обновления", min_value=1, step=1)
+        field_to_update = st.selectbox("Поле для обновления", ["address", "name"])
+        new_value = st.text_input("Новое значение")
+        if st.button("Обновить запись"):
+            update_wallet(wallet_id_to_update, field_to_update, new_value)
+
+        st.subheader("Удаление записи")
+        wallet_id_to_delete = st.number_input("ID записи для удаления", min_value=1, step=1)
+        if st.button("Удалить запись"):
+            delete_wallet(wallet_id_to_delete)
 
         st.markdown("""
         <style>
