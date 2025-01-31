@@ -134,8 +134,6 @@ if not st.session_state.authenticated:
             st.success("Успешный вход в систему!")
         else:
             st.error("Неверное имя пользователя или пароль")
-    st.stop()  # Остановить дальнейшую отрисовку интерфейса, пока не выполнен вход
-
 else:
     st.title("Кошельки из базы данных PostgreSQL")
 
