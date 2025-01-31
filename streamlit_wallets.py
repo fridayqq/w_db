@@ -86,11 +86,11 @@ st.title("Кошельки из базы данных PostgreSQL")
 
 # Поля для ввода имени пользователя и пароля
 username = st.text_input("Имя пользователя")
-password = st.text_input("Пароль", type="password")
+pwd = st.text_input("Пароль", type="password")
 
 # Кнопка авторизации
 if st.button("Авторизоваться"):
-    if username == "admin" and password == "admin_pass":
+    if username == app_login and password == app_password:
         st.session_state.authenticated = True
         st.success("Вы успешно авторизовались!")
     else:
