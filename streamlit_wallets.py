@@ -45,7 +45,7 @@ def get_wallet_addresses_with_names():
             st.error("Соединение с базой данных не установлено. Подключитесь заново.")
             return []
         cursor = st.session_state.conn.cursor()
-        cursor.execute("SELECT address, name FROM project1.wallets")
+        cursor.execute("SELECT id, address, name FROM project1.wallets")
         wallets = cursor.fetchall()
         return wallets
     except Exception as e:
