@@ -13,7 +13,6 @@ ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
 USER_LOGIN = os.getenv("USER_LOGIN")
 USER_PASSWORD = os.getenv("USER_PASSWORD")
 
-
 # Функция для получения данных из базы данных
 def get_wallets():
     try:
@@ -132,7 +131,7 @@ if not st.session_state.authenticated:
     if st.button("Войти"):
         if authenticate_user(username, password):
             st.session_state.authenticated = True
-            st.success("Успешный вход в систему!")
+            st.experimental_rerun()  # Обновить интерфейс после входа
         else:
             st.error("Неверное имя пользователя или пароль")
 else:
