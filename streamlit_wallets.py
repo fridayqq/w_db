@@ -76,7 +76,7 @@ def update_webhook():
 
     payload = {
         "webhookURL": webhook_url,
-        "transactionTypes": ["Any"],
+        "transactionTypes": ["SWAP"],
         "accountAddresses": wallets,
         "webhookType": "enhanced",
         "txnStatus": "all"
