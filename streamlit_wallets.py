@@ -4,7 +4,7 @@ import pandas as pd
 import os
 import requests
 import json
-from  dotenv import load_dotenv
+
 
 st.set_page_config(layout="wide")
 
@@ -20,7 +20,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-load_dotenv()
 # Получение данных для подключения к базе данных из переменных окружения
 host = os.getenv("DB_HOST")
 port = os.getenv("DB_PORT", "5432")
