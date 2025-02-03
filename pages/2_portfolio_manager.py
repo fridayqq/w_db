@@ -4,6 +4,18 @@ import psycopg2
 import os
 import plotly.express as px
 
+host = os.getenv("DB_HOST")
+port = os.getenv("DB_PORT", "5432")
+dbname = os.getenv("DB_NAME")
+user = os.getenv("DB_USER")
+password = os.getenv("DB_PASSWORD")
+app_login = os.getenv("APP_LOGIN")  # Логин для приложения
+app_password = os.getenv("APP_PASSWORD")  # Пароль для приложения
+api_token = os.getenv("API_KEY")
+webhook_id = os.getenv("WEBHOOK_ID")
+webhook_url = os.getenv("WEBHOOK_URL")
+
+
 
 st.set_page_config(layout="wide")
 st.title("Portfolio Manager")
@@ -84,7 +96,7 @@ if check_connection():
             
             password = st.text_input("Введите пароль для просмотра графиков", type="password")
             if st.button("Показать графики"):
-                if password == "solana228":
+                if password == app_password:
                     # Create visualization
                     fig = px.bar(
                         st.session_state.stats_df,
