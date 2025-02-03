@@ -60,7 +60,7 @@ def get_wallet_addresses_with_names():
             st.error("Соединение с базой данных не установлено. Подключитесь заново.")
             return []
         cursor = st.session_state.conn.cursor()
-        cursor.execute("SELECT id, address, name, wallet_type FROM project1.wallets")
+        cursor.execute("SELECT id, address, name, wallet_type FROM project1.wallets ORDER BY id ASC")
         wallets = cursor.fetchall()
         return wallets
     except Exception as e:
@@ -187,9 +187,7 @@ def import_from_excel(df, address_col, name_col, type_col):
     except Exception as e:
         st.error(f"Ошибка при импорте: {e}")
         return False
-
-# Streamlit UI
-st.title("Кошельки из базы данных PostgreSQL")
+        
 
 # Поля для ввода имени пользователя и пароля
 username = st.text_input("Имя пользователя")
