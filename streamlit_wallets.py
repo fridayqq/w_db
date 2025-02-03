@@ -4,7 +4,23 @@ import pandas as pd
 import os
 import requests
 import json
+from  dotenv import load_dotenv
 
+st.set_page_config(layout="wide")
+
+st.markdown("""
+<style>
+.main .block-container { 
+    max-width: 1400px; 
+    padding: 1rem;
+}
+.element-container:has(> .stDataFrame) {
+    height: calc(100vh - 200px);
+}
+</style>
+""", unsafe_allow_html=True)
+
+load_dotenv()
 # Получение данных для подключения к базе данных из переменных окружения
 host = os.getenv("DB_HOST")
 port = os.getenv("DB_PORT", "5432")
@@ -170,46 +186,62 @@ if "authenticated" in st.session_state and st.session_state.authenticated:
         if "wallets_df" not in st.session_state:
             st.session_state.wallets_df = None
 
-        if st.button("Получить данные из БД"):
-            wallets = get_wallet_addresses_with_names()
-            if wallets:
-                st.session_state.wallets_df = pd.DataFrame(wallets, columns=["ID", "Адрес", "Имя"])
+        # Create two columns
+        left_col, right_col = st.columns(2)
 
-        if st.session_state.wallets_df is not None:
-            st.dataframe(st.session_state.wallets_df)
+        # Left column - Database data display
+        with left_col:
+            st.subheader("Данные из базы")
+            if st.button("Получить данные из БД"):
+                wallets = get_wallet_addresses_with_names()
+                if wallets:
+                    st.session_state.wallets_df = pd.DataFrame(wallets, columns=["ID", "Адрес", "Имя"])
+            
+            if st.session_state.wallets_df is not None:
+                st.dataframe(
+                    st.session_state.wallets_df,
+                    use_container_width=True,
+                    height=6000
+                )
 
-        st.subheader("Поиск записей")
-        search_field = st.selectbox("Поле для поиска", ["id", "address", "name"])
-        search_value = st.text_input("Значение для поиска")
-        if st.button("Найти записи"):
-            search_results = search_wallets(search_field, search_value)
-            if search_results:
-                search_df = pd.DataFrame(search_results, columns=["ID", "Адрес", "Имя"])
-                st.dataframe(search_df)
-            else:
-                st.info("Записей не найдено.")
+        # Right column - All other operations
+        with right_col:
+            # st.subheader("Поиск записей")
+            # search_field = st.selectbox("Поле для поиска", ["id", "address", "name"])
+            # search_value = st.text_input("Значение для поиска")
+            # if st.button("Найти записи"):
+            #     search_results = search_wallets(search_field, search_value)
+            #     if search_results:
+            #         search_df = pd.DataFrame(search_results, columns=["ID", "Адрес", "Имя"])
+            #         st.dataframe(
+            #             search_df,
+            #             use_container_width=True,
+            #             height=400
+            #         )
+            #     else:
+            #         st.info("Записей не найдено.")
 
-        st.subheader("Добавление новой записи")
-        new_address = st.text_input("Адрес нового кошелька")
-        new_name = st.text_input("Имя нового кошелька")
-        if st.button("Добавить запись"):
-            add_wallet(new_address, new_name)
+            st.subheader("Добавление новой записи")
+            new_address = st.text_input("Адрес нового кошелька")
+            new_name = st.text_input("Имя нового кошелька")
+            if st.button("Добавить запись"):
+                add_wallet(new_address, new_name)
 
-        st.subheader("Редактирование записи")
-        wallet_id_to_update = st.number_input("ID записи для обновления", min_value=1, step=1)
-        field_to_update = st.selectbox("Поле для обновления", ["address", "name"])
-        new_value = st.text_input("Новое значение")
-        if st.button("Обновить запись"):
-            update_wallet(wallet_id_to_update, field_to_update, new_value)
+            st.subheader("Редактирование записи")
+            wallet_id_to_update = st.number_input("ID записи для обновления", min_value=1, step=1)
+            field_to_update = st.selectbox("Поле для обновления", ["address", "name"])
+            new_value = st.text_input("Новое значение")
+            if st.button("Обновить запись"):
+                update_wallet(wallet_id_to_update, field_to_update, new_value)
 
-        st.subheader("Удаление записи")
-        wallet_id_to_delete = st.number_input("ID записи для удаления", min_value=1, step=1)
-        if st.button("Удалить запись"):
-            delete_wallet(wallet_id_to_delete)
+            st.subheader("Удаление записи")
+            wallet_id_to_delete = st.number_input("ID записи для удаления", min_value=1, step=1)
 
         st.markdown("""
         <style>
         .streamlit-button-primary { background-color: #4CAF50; color: white; font-weight: bold; border-radius: 5px; }
+        .main .block-container { max-width: 1400px; padding-top: 1rem; padding-right: 1rem; padding-left: 1rem; }
+        .stDataFrame {width: 100%;}
         </style>
         """, unsafe_allow_html=True)
 
